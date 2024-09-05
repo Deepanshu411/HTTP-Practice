@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map } from 'rxjs';
+import { map, tap } from 'rxjs';
 
 import { Place } from './place.model';
 
@@ -19,9 +19,16 @@ export class PlacesService {
 
   loadUserPlaces() {
     return this.fetchPlaces('http://localhost:3000/user-places')
+    .pipe(
+      tap({
+        next: userPlaces => this.userPlaces.set(userPlaces)
+      })
+    )
   }
 
   addPlaceToUserPlaces(place: Place) {
+    this.userPlaces.set([...this.userPlaces(), place]);
+    
     return this.httpClient.put('http://localhost:3000/user-places', {
       placeId: place.id
     })
