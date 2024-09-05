@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 
 import { PlacesContainerComponent } from '../places-container/places-container.component';
 import { PlacesComponent } from '../places.component';
+import { Place } from '../place.model';
+import { PlacesService } from '../places.service';
 
 @Component({
   selector: 'app-user-places',
@@ -11,4 +13,22 @@ import { PlacesComponent } from '../places.component';
   imports: [PlacesContainerComponent, PlacesComponent],
 })
 export class UserPlacesComponent {
+  places = signal<Place[] | undefined>(undefined);
+  isFetching = signal(false);
+  error = signal('')
+  private placesService = inject(PlacesService);
+  private destroyRef = inject(DestroyRef);
+
+  ngOnInit(): void {
+    this.isFetching.set(true);
+    
+    const subscription = 
+    this.placesService.loadUserPlaces().subscribe({
+      next: (places) => this.places.set(places),
+      error: (error) => this.error.set(error),
+      complete: () => this.isFetching.set(false)
+    });
+
+    this.destroyRef.onDestroy(() => subscription.unsubscribe())
+  }
 }
