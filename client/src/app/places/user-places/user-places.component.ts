@@ -30,4 +30,10 @@ export class UserPlacesComponent {
 
     this.destroyRef.onDestroy(() => subscription.unsubscribe())
   }
+
+  onDeletePlace(selectedPlace: Place) {
+    const subscription = this.placesService.removeUserPlace(selectedPlace).subscribe()
+
+    this.destroyRef.onDestroy(() => subscription.unsubscribe())
+  }
 }

@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map, tap } from 'rxjs';
+import { catchError, map, tap, throwError } from 'rxjs';
 
 import { Place } from './place.model';
 
@@ -27,14 +27,35 @@ export class PlacesService {
   }
 
   addPlaceToUserPlaces(place: Place) {
-    this.userPlaces.set([...this.userPlaces(), place]);
-    
+    const placeExist = this.userPlaces().some(currPlace => currPlace.id === place.id);
+    const prevPlaces = this.userPlaces();
+    if (!placeExist) {
+      this.userPlaces.set([...prevPlaces, place])
+
+    }
+
     return this.httpClient.put('http://localhost:3000/user-places', {
       placeId: place.id
-    })
+    }).pipe(
+      catchError((error) => {
+        this.userPlaces.set(prevPlaces);
+        return throwError(() => new Error('Error adding user places'));
+      })
+    )
   }
 
-  removeUserPlace(place: Place) {}
+  removeUserPlace(place: Place) {
+    this.userPlaces.set(this.userPlaces().filter(currPlace => currPlace.id !== place.id))
+    const prevPlaces = this.userPlaces();
+
+    return this.httpClient.delete(`http://localhost:3000/user-places/${place.id}`)
+    .pipe(
+      catchError((error) => {
+        this.userPlaces.set(prevPlaces);
+        return throwError(() => new Error('Error deleting user places'));
+      })
+    )
+  }
 
   private fetchPlaces(url: string) {
     return this.httpClient.get<{places: Place[]}>(url)
